@@ -1,0 +1,124 @@
+---
+title: Retrieve Auth-Key from Mi Smart Band 4
+date: '2019-09-15'
+tags: ['Mi Smart Band 4', 'Gadgetbridge', 'privacy']
+draft: false
+summary: The blog post describes how to retrieve the AuthKey from the Mi Band 4 with the help of a rooted Android device.
+---
+
+## Preface
+
+For her birthday my partner asked for a fitness tracker for recording and evaluating basic fitness data.
+The premise, however, was that the recorded fitness data would not end up in the manufacturer's cloud. She wanted to continue to have data sovereignty.
+
+After a short research it became clear that there is open source software for fitness trackers that do not pass recorded data.
+[Gadgetbridge](https://gadgetbridge.org/) for example is such kind of software, which seems to work with the Mi Band 1-3 of the manufacturer Xiaomi.
+
+I chose a Mi Band because these trackers seems to work with the stated open source software and offers the basic features that such an entry-level device should have.
+For example, step counters, pulse measurement and the recording of activity and sleep data.
+
+Now the new [Mi Band 4](https://www.mi.com/global/mi-smart-band-4) was published in Europe at the end of June and it was obvious to accquire the latest version of the device.
+Unfortunately, the manufacturer has implemented a new pairing mechanism that makes it much more difficult to use the Mi Band 4 with alternative software.
+In detail, an AuthKey is generated in the official MiFit app, which is not easily accessible, but needed by Gadgetbridge to establish a connection.
+
+The discussion regarding the support of the Mi Band 4 in Gadgetbridge can be found [here](https://github.com/Freeyourgadget/Gadgetbridge/issues/1536).
+
+Fortunately, there are ways and means to extract the AuthKey and transfer it to Gadgetbridge. I will explain the requirement and steps below.
+
+## Tools and resources
+
+The following tools are required to read out the AuthKey:
+
+- Rooted Android smartphone or tablet with Bluetooth (in my case a "Lenovo Tab 2 A10-70F")
+- Sqlite3 on the rooted Android device
+- Computer with [Minimal ADB and Fastboot](https://androidmtk.com/download-minimal-adb-and-fastboot-tool)
+
+A quick look at the [instructions from Gadgetbridge](https://github.com/Freeyourgadget/Gadgetbridge/wiki/Mi-Band-4) for reading the AuthKey definitely can't hurt.
+The steps are described again in detail below.
+
+<NoticeBox
+  type="red"
+  heading="Danger"
+  content={[
+    {
+      text:
+        'Every time the Mi Band is reseted to factory settings or the pairing is canceled via the official MiFit app, the AuthKey must be fetched again using the method described here.',
+    },
+    {
+      text:
+        'The reason is that the internal Bluetooth MAC address, on the basis of which the AuthKey is created, changes.',
+    },
+  ]}
+/>
+
+## ToDo's
+
+### Generating the AuthKey
+
+The AuthKey is generated via the manufacturer's official [MiFit app](https://play.google.com/store/apps/details?id=com.xiaomi.hm.health) app.
+
+First, the app must be installed and the Mi Band must be paired with the official app.
+For this it is necessary to register **once** via the app and to create an account.
+
+<NoticeBox
+  type="red"
+  heading="Attention"
+  content={[
+    {
+      text: 'The device may receive firmware updates after connecting to the app.',
+    },
+    {
+      text:
+        'In this case status of the update is displayed in the app. This process can be repeated several times.',
+    },
+    {
+      image: {
+        src: '/static/blog/2019-09-15-screenshot-miband-update.png',
+        height: 772,
+        width: 1200,
+        alt: 'mi-band-4-firmware-update',
+      },
+    },
+  ]}
+/>
+
+After the Mi Band has been successfully connected to the MiFit app, following status should appear in
+the app.
+
+![mi-band-4-paired](/static/blog/2019-09-15-screenshot-miband-paired.png 'mi band 4 paired
+with mi fit app')
+
+### Reading the AuthKey
+
+The next step is to retrieve out the AuthKey.
+This is done via computer using [Android Debug Bridge (ADB for short)](https://www.droidwiki.org/wiki/Android_Debug_Bridge).
+
+The smartphone or tablet should be connected to the computer and you have to change into the installation directory of [Minimal ADB and Fastboot](https://androidmtk.com/download-minimal-adb-and-fastboot-tool).
+
+```bash
+cd "C:\Program Files (x86)\Minimal ADB and Fastboot"
+```
+
+To check whether the Android device can be reached, command `adb devices` is used. If nothing can be seen after first command USB debugging mode has to be activated in the device.
+How this works is explained [here](https://www.android-recovery.de/android-usb-debugging-aktivieren.html). The device should be recognized afterwards.
+
+![adb-devices](/static/blog/2019-09-15-adb-device-connectivity.png 'adb devices command')
+
+Next you can enter an interactive shell on the device via `adb shell`.
+In order to be able to display the databases, you need root access which we can obtain via `su`.
+Then we can use the following command to display the database which has been created by MiFit app.
+
+```bash
+ls -l /data/data/com.xiaomi.hm.health/databases/origin_db_*
+```
+
+The database **origin\\\_db\​​\_[NAME\_OF\_THE\_DB]** contains the AuthKey and is queried with the `sqlite3` command.
+
+```bash
+sqlite3 /data/data/com.xiaomi.hm.health/databases/origin_db_[NAME_DER_DB] "select AUTHKEY from DEVICE"
+```
+
+The AuthKey should be displayed, which is needed by Gadgetbridge to connect to the Mi Band.
+![adb-shell](/static/blog/2019-09-15-adb-shell-authkey.png 'adb shell retrieving auth key')
+
+To hand over the AuthKey to Gadgetbridge, you can continue with the [Instructions from Gadgetbridge](https://github.com/Freeyourgadget/Gadgetbridge/wiki/Mi-Band-4), which documents the process very well with screenshots.

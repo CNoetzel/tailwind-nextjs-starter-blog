@@ -1,0 +1,19 @@
+{
+  "title": "DivisionBy0 Tech Stuff",
+  "author": "Carsten Noetzel",
+  "headerTitle": "DivisionBy0",
+  "description": "IT/Tech enthusiast and hobbyist",
+  "language": "en-us",
+  "siteUrl": "https://divisionby0.de",
+  "siteRepo": "https://github.com/CNoetzel/tailwind-nextjs-starter-blog",
+  "image": "/static/images/avatar.png",
+  "socialBanner": "",
+  "email": "webmaster@divisionby0.de",
+  "github": "https://github.com/CNoetzel",
+  "twitter": "",
+  "facebook": "https://facebook.com/carsten.noetzel.1",
+  "youtube": "",
+  "linkedin": "",
+  "xing": "https://www.xing.com/profile/Carsten_Noetzel/cv",
+  "locale": "en-US"
+}

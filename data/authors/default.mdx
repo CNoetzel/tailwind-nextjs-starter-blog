@@ -9,8 +9,12 @@ github: https://github.com/CNoetzel
 xing: https://www.xing.com/profile/Carsten_Noetzel/cv
 ---
 
-Tails Azimuth is a professor of atmospheric sciences at the Stanford AI Lab. His research interests includes complexity modelling of tailwinds, headwinds and crosswinds.
+My name is Carsten, I am a computer scientist and professionally working as a software developer at [EDEKA DIGITAL GmbH](https://digital.edeka/).
 
-He leads the clean energy group which develops 3D air pollution-climate models, writes differential equation solvers, and manufactures titanium plated air ballons. In his free time he bakes raspberry pi.
+In my free time, I am busy with small tech handicraft projects, which you can read about on this website.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed neque elit, tristique placerat feugiat ac, facilisis vitae arcu. Proin eget egestas augue. Praesent ut sem nec arcu pellentesque aliquet. Duis dapibus diam vel metus tempus vulputate.
+These include in particular:
+
+- Projects based on the single-board computer [RaspberryPi](https://www.raspberrypi.org/)
+- Use of [Amazon Web Service](https://aws.amazon.com/) in private environment
+- SmartHome home automation using [OpenHab](https://www.openhab.org/)

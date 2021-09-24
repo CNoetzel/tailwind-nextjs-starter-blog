@@ -1,0 +1,109 @@
+---
+title: Nesting box camera
+date: '2019-07-11'
+tags: ['motion', 'raspberry pi', 'nesting box']
+draft: false
+summary: Content of this post is the installation of a Raspberry Pi night vision camera using motion for motion detection.
+---
+
+## Preface
+
+The nesting box was originally put into operation with a **Raspberry Pi Model B Revision 2.0 (700 MHz, 512 MB)**.
+Since the recordings were a bit jerky and not the best quality, I decided to buy new hardware for the nesting box. At the same time, I also documented the facility.
+
+Now I am using a **Raspberry Pi 3 Model B V1.2 (1200 MHz, 1GB)** with the [Kuman 5MP NightVision camera](http://www.kumantech.com/kuman-for-raspberry-pi-camera-module-5mp-1080p-ov5647-sensor-hd-video-webcam-night-vision-for-all-vision-raspberry-pi-model-b-b-a-rpi-3-2-1-sc15-1_p0432.html). The Raspberry Pi camera module can be put into operation as follows.
+
+## Steps
+
+### Activation of the camera interface
+
+First the camera interface on the Raspberry Pi should be switched on.
+This could be done by opening the configuration interface using `sudo raspi-config` and activating it under _5. Interface Options_ → _P1 Camera_.
+
+![raspi-config](/static/blog/2019-07-11-raspi-config.PNG 'raspi-config activating camera interface')
+
+If not already done the camera can now be connected to the Pi using the FFC connection cable.
+A first test can then be carried out to determine whether the camera has been connected correctly and is working.
+
+```bash
+ raspistill -o test.jpg
+```
+
+The command should take a picture and place it in the current folder.
+
+### Load camera driver
+
+Motion requires a device that works with the V4L / Video4Linux driver. Therefore module `bcm2835-v4l2` has to be loaded.
+To do this automatically on system start-up two entries are added to the file `/etc/modules-load.d/modules.conf`.
+
+```bash
+# camera with v4l2 driver
+v4l2_common
+bcm2835-v4l2
+```
+
+After reboot the command `ls -l /dev/video*` should list the video device `/dev/video0`.
+
+![video-devices](/static/blog/2019-07-11-video-devices.PNG 'video devices')
+
+### Install Motion
+
+Nex step is installing [Motion](https://motion-project.github.io).
+
+```bash
+sudo apt-get install motion
+```
+
+<NoticeBox
+  type="blue"
+  heading="Note"
+  content={[
+    {
+      text:
+        'If during installation the message <span style="color:red; font-family: Consolas, Monaco, &apos;Andale Mono&apos;, &apos;Ubuntu Mono&apos;, monospace;word-break: break-all;">Failed to fetch http://raspbian.raspberrypi.org/raspbian/pool/main/p/postgresql-11/libpq5_11.3-1_armhf.deb</span> appears an apt update should be carried out (see <a href="https://www.raspberrypi.org/forums/viewtopic.php?t=63276&p=1495729" target="_blank">link</a>).',
+    },
+    { isCode: true, text: 'sudo apt update --allow-releaseinfo-change\nsudo apt-get upgrade' },
+    {
+      text:
+        'The parameter allows the update command to continue downloading data from a repository which changed its information of the release contained in the repository indicating e.g a new major release.',
+    },
+  ]}
+/>
+
+### Configuration of motion
+
+Motion is controlled via a configuration file that can be found under `/etc/motion/motion.conf`. In the following, I will briefly discuss the most important changes that I have made to my configuration.
+The complete documentation for the configuration can be found [here](https://motion-project.github.io/motion_config.html).
+
+| Parameter             | Wert              | Funktion                                                                                                                                                 |
+| --------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| daemon                | on                | Motion can be started as daemon.                                                                                                                         |
+| width                 | 1024              | Image width in pixels                                                                                                                                    |
+| height                | 768               | Image height in pixels                                                                                                                                   |
+| threshold             | 50000             | Number of pixels that have to change to be recognized as movement. I have chosen a relatively large value here because the monitored area is very small. |
+| minimum_motion_frames | 5                 | Number of consecutive frames that must contain motion before motion detection is triggered.                                                              |
+| output_pictures       | center            | Images should be saved when movement is detected, namely when the movement is as close as possible to the center of the image.                           |
+| quality               | 100               | Quality of the JPEG / WEBP compression.                                                                                                                  |
+| text_right            | %d.%m.%Y\n%T      | The date in DMY format should be displayed at the bottom right.                                                                                          |
+| text_left             | Nistkasten        | The text "Nesting Box" appears at the bottom left.                                                                                                       |
+| target_dir            | /home/xxx/Monitor | Folder under which the images are to be stored.                                                                                                          |
+| stream_localhost      | off               | Enable access the to live stream from other computers.                                                                                                   |
+| stream_maxrate        | 30                | Maximum refresh rate of the live stream.                                                                                                                 |
+
+After changes to the configuration Motion is restarted by `sudo service motion restart`.
+
+If the standard port 8081 has been retained, the live stream can then be accessed with a browser via the IP or the host name of the Pi, e.g. `http://hostname-of-the-pi:8081/`.
+
+### Starting Motion daemon
+
+Since the first option stipulated that Motion can be started as daemon we have to ensure that this happens every time the system is started.
+Therefore the file `/etc/default/motion` is adapted and the value is set to `yes`.
+
+```bash
+# set to 'yes' to enable the motion daemon
+start_motion_daemon=yes
+```
+
+### Finshed
+
+That's it! The camera should now record everything and store pictures in the configured folder if motion has been detected.

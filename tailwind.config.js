@@ -1,6 +1,7 @@
 // @ts-check
 const { fontFamily } = require('tailwindcss/defaultTheme')
 const colors = require('tailwindcss/colors')
+const { green } = require('tailwindcss/colors')
 
 /** @type {import("tailwindcss/types").Config } */
 module.exports = {
@@ -36,6 +37,28 @@ module.exports = {
       typography: ({ theme }) => ({
         DEFAULT: {
           css: {
+            color: theme('colors.gray.700'),
+            '.blue': {
+              backgroundColor: theme('colors.blue.200'),
+              color: theme('colors.blue.700'),
+            },
+            '.yellow': {
+              backgroundColor: theme('colors.yellow.200'),
+              color: theme('colors.yellow.700'),
+            },
+            '.red': {
+              backgroundColor: theme('colors.red.200'),
+              color: theme('colors.red.700'),
+            },
+            '.shadow-blue': {
+              boxShadow: '0 10px 15px -3px #bae6fd, 0 4px 6px -2px #bae6fd',
+            },
+            '.shadow-yellow': {
+              boxShadow: '0 10px 15px -3px #fde68a, 0 4px 6px -2px #fde68a',
+            },
+            '.shadow-red': {
+              boxShadow: '0 10px 15px -3px #fecaca, 0 4px 6px -2px #fecaca',
+            },
             a: {
               color: theme('colors.primary.500'),
               '&:hover': {

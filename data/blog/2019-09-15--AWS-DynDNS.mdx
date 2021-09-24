@@ -1,0 +1,131 @@
+---
+title: DynDNS with AWS
+date: '2019-09-15'
+tags: ['AWS', 'raspberry pi', 'nesting box', 'DynDNS', 'cloud']
+draft: false
+summary: This post explains how a host with a dynamic IP address can be made statically accessible via Amazon Web Services (AWS).
+---
+
+## Preface
+
+The [digital nesting box](...) is connected to my local network and gets assigned a local ip adress which can be used to access the live stream. This access is currently restricted to my local network.
+
+To make the video stream publicly available two things have to be done:
+
+- a port-forwarding is needed to access the nesting box from outside of my local network
+- the dynamically assiged external IP adress assigned by my provider has to made statically accessible
+
+The keyword for the latter task is [DynDNS](https://en.wikipedia.org/wiki/Dynamic_DNS) which means that the dynamic IP address to which the subdomain `nestingbox.divisionby0.de` points will be updated in the Domain Name System (DNS) as soon as it changes.
+
+An automatic update in conjunction with Route53 from Amazon Web Services (AWS) is set up as follows.
+
+## Requirements
+
+The following requirements should be met so that you can benefit from the instructions:
+
+- registered domain
+- AWS Account
+- basic knowledge of AWS (especially IAM and Route53)
+- basic knowledge of DNS
+
+<NoticeBox
+  type="red"
+  heading="Attention"
+  content={[
+    {
+      text:
+        'If you link your dynamic IP to a domain and make it known in DNS, your network can be reached from outside via this domain at any time.',
+    },
+    { text: 'This may make it easier for attackers to break into your network and cause damage.' },
+    {
+      text:
+        '<b>I do not assume any liability for any damage caused by incorrect configuration. You act at your own risk if you follow the instructions in this post.</b>',
+    },
+  ]}
+/>
+
+## Steps
+
+### Installation of AWS-CLI
+
+In my case, the update of the IP address should be done by the Raspberry Pi of the nesting box itself.
+For this reason, DNS utils and the AWS CLI must first be installed on the Pi.
+
+```bash
+sudo apt-get install dnsutils
+sudo apt-get install awscli
+```
+
+Next, configure the AWS CLI with the `aws configure` command. Enter the access keys of the AWS user who updates the IP address when promted.
+
+The credentials can be found in the AWS Console in "Identity and Access Management" (IAM). A separate API user is recommended
+to create for this purpose. This user should only has the rights to carry out exactly this one task.
+
+```bash
+AWS Access Key ID [None]:
+AWS Secret Access Key [None]:
+Default region name [None]:
+Default output format [None]:
+```
+
+Alternatively corresponding data can also be entered directly in the `config` and` credentials` files, which are located in `.aws` folder.
+
+```bash
+.aws/config
+.aws/credentials
+```
+
+### Updateing the IP adress automatically
+
+To update the IP address in Route53 I use a [Script by Will Warren](https://gist.github.com/phybros/827aa561a44032dd1556).
+This script is saved as **updateIP.sh** in the home directory and made executable via `chmod 755 updateIP.sh`.
+
+**Two adjustments** have to be made in the script before it is able to tell Route53 the dynamic IP of the nesting box.
+
+First, the **ZONEID** of the hosted zone in AWS must be entered in the script. The ZoneID can be read out via Route53 in AWS Console.
+
+After that the entry we want to update must be specified as **RECORDSET**.
+Since in my case the subdomain `nestingbox.divisionby0.de` should always refer to my dynamic IP, I created a corresponding A record in the hosted zone and entered it as the value for **RECORDSET**.
+
+![aws route53 config](/static/blog/2019-09-15-aws-route53-config.png 'aws route53 config')
+
+Afterwards the script can be executed via `./updateIp.sh` and `update-route53.log` should be checked to see whether the IP address has been updated.
+If the IP address has changed or is being transferred for the first time, the following entry should be found in the log file.
+
+```json
+{
+  "ChangeInfo": {
+    "Id": "/change/C1EVWTXTSRI4K0",
+    "Status": "PENDING",
+    "SubmittedAt": "2019-07-12T15:02:49.263Z",
+    "Comment": "Auto updating @ Fri 12 Jul 17:02:46 CEST 2019"
+  }
+}
+```
+
+In this case the connection to AWS was successfully established via CLI and the IP address was transferred to Route53.
+
+### Port forwarding
+
+Congratulations, the whole world is now able to access the home network via the dynamic IP connection that has just been set up with the domain.
+
+Since only the web server of the nesting box should be publicly accessible, but not the rest of the network, appropriate precautions must be taken.
+
+Usually firewalls in newer routers are configured in such a way that external traffic is blocked directly.
+So we have to explicitly whitelist the port of the web server so that it can be accessed from the outside.
+
+In Fritzbox devices this cloud be done via "Internet -> Share -> Port shares" settings. The nesting box hostname is selected and port 80 of the web server is whitelisted.
+
+The stream can now be accessed directly via [nestingbox.divisionby0.de](http://nestingbox.divisionby0.de/).
+It is also advisable to check whether any ports are open that shouldn't be.
+
+This can be done using tools such as [DNSTools](http://www.dnstools.ch/port-scanner.html).
+
+## Alternatives to DynDNS
+
+To bind a dynamic IP address to a domain you do not necessarily need an AWS account and a HostedZone in Route53.
+If you have a Fritzbox they already offer services which can be used to transfer a dynamic IP address to DynDNS services.
+
+For example, the video stream of the web server could be made available online only using a Fritzbox and a domain registered at Strato.
+
+However, since I wanted to use the actual domain for the blog and have the nesting box available under a subdomain, this was no longer possible using these simple means and I switched to the AWS variant described here.

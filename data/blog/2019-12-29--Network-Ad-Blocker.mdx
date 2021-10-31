@@ -1,0 +1,170 @@
+---
+title: Network adblocker Pi-hole
+date: '2019-12-29'
+tags: ['Raspberry Pi', 'Pi-hole', 'adblocker', 'DNS', 'privacy']
+draft: false
+summary: Pi-hole is an ad and tracking blocker at network level that can be put into operation with little effort.
+---
+
+## Preface
+
+Nowadays we encounter advertising on a daily basis. Every website we visit or app that we use displays advertisements or tries to determine our surfing behavior using so-called "trackers".
+\
+While we can install ad and tracking blockers in the browser to remedy this, it is not that easy with smart TVs with compulsory advertising or within apps on mobile devices.
+
+The open source project [Pi-hole](https://pi-hole.net/) which is installed, configured and tested in the following article is supposed to help.
+
+## How does it work?
+
+Pi-hole serves as a local DNS server through which all local network DNS queries are resolved.
+\
+For example, if an app on a smartphone wants to retrieve advertising from a server with host name _server.advertisement.com_, this domain name must first be converted into an IP address.
+A register containing that mapping is called the Domain Name System (DNS). Pi-hole offers this DNS service and checks if the requested host name is contained in a blacklist and suppresses the resolution if this is the case.
+As a result there is no communication between the app and the advertising server _server.advertisement.com_ and the advertising won't be loaded.
+
+## ToDo's
+
+### Installation and configuration of Pi-hole
+
+The installation of Pi-hole on a Raspberry Pi is done with the following command.
+
+```bash
+sudo curl -sSL https://install.pi-hole.net | bash
+```
+
+During the installation it is pointed out that the Pi needs a static IP address as it should act as a DNS server in future.
+Depending on how the Pi is connected to the network, the (wlan0) WLAN or network interface (eth0) must be selected here.
+When selecting an upstream DNS provider you can specify your own DNS upstream server using the "Custom" option.
+
+I use the DNS servers from [Digitalcourage eV](https://digitalcourage.de/support/zensurfreier-dns-server) and [SecureDNS](https://securedns.eu/) because they are censorship-free, they do not log requests and the servers are located in Europe.
+
+```bash
+46.182.19.48, 146.185.167.43
+```
+
+After confirmation of the DNS server you will be asked which third-party backlist should be used. All lists are activated by default. This setting can be adopted as it is.
+
+The same applies to the IPv4 and IPv6 protocols in the subsequent configuration step.
+
+Afterwards select the IP settings which should be used to access the DNS server in the network.
+By default the currently assigned IP address and DHCP server are displayed e.g. **192.168.xxx.xxx**.
+It is advisable to make a note of this data as the IP address has to be stored in the router later.
+
+If activation of the admin interface and installation of _lighttpd_ is confirmed the admin interface can be reached at http://192.168.xxx.xxx/admin afterwards.
+
+Logging can be deactivated without any loss of functionality in order to protect the SD card.
+
+An explanation of the different privacy levels for the statistics in the next step can be found at https://docs.pi-hole.net/ftldns/privacylevels/.
+For the first explortaion of advertising traffic in your network confirm the default value "Show everything" in order to be able to see as much as possible in the statistics.
+
+<NoticeBox
+  type="blue"
+  heading="Important"
+  content={[
+    {
+      text:
+        'Installation takes place when the last configuration step is completed. Afterwards the following dialog is displayed which contain the admin password for the web interface.',
+    },
+    {
+      text: 'Note the password.',
+    },
+    {
+      image: {
+        src: '/static/blog/2019-12-29-pi-hole-install-finished.png',
+        height: 351,
+        width: 588,
+        alt: 'install finished dialog',
+      },
+    },
+  ]}
+/>
+
+### SD card protection
+
+Since the Pi as a DNS server constantly receives requests and also logs them (if configured) the following settings can be made to protect the SD card:
+
+- Deactivate Swap
+
+  ```bash
+  sudo dphys-swapfile swapoff
+  sudo systemctl disable dphys-swapfile
+  sudo apt-get purge dphys-swapfile
+  ```
+
+- Deactivate Query logging of Pi-hole  
+  If not already deactivated during the installation this can be dectivated in web interface under "Settings → Tab: System → Button: Disable query logging".
+- Reduce write access to the Pi-hole Longterm Database  
+  For this purpose the value of [DBINTERVAL](https://docs.pi-hole.net/ftldns/configfile/#dbinterval) is increased in `/etc/pihole/pihole-FTL.conf`.
+
+This reduces write access to the SD card and hopefully the card will last longer.
+
+### Router settings
+
+After Pi-hole has been configured as a DNS server, two more settings have to be made in the router. Following the settings are described for a Firtzbox 7590.
+General help on the subject can be found in [Pi-hole FAQs](https://discourse.pi-hole.net/t/how-do-i-configure-my-devices-to-use-pi-hole-as-their-dns-server/245).
+
+**Step 1**\
+It must be ensured that the device running Pi-hole has always the same IP address, since the device now acts as a DNS server in the network.  
+Login into the Fritzbox, navigate to "Home Network → Network" and click on the "Edit" button for the corresponding host. Check mark "Always assign the same IPv4 address to this network device." in the overlay.
+
+![ip-settings-host](/static/blog/2019-12-29-dns-fixed-ip.png 'IP configuration dialog')
+
+**Step 2**\
+Inform the router that there is a separate DNS server in the network and that this should be used for DNS queries.  
+To do this navigate to "Home Network → Network → Tab: Network Settings → Button: IPv4 Addresses".
+Now enter the IP address for "Local DNS server" which is assigned to the Pi.
+
+![dns-settings-fritzbox](/static/blog/2019-12-29-dns-fritzbox.png 'DNS configuration dialog')
+
+<NoticeBox
+  type="blue"
+  heading="Hint"
+  content={[
+    {
+      text:
+        'The extended view has to be activated in the Fritzbox in order to be able to configure DNS settings.',
+    },
+  ]}
+/>
+
+### Resolve local IPs to host names
+
+Now that Pi-hole answers all DNS queries, you may see the first queries appear in the admin interface at http://192.168.xxx.xxx/admin.
+You should notice that instead of host names only IP addresses of the network devices are shown.
+As Pi-hole is configured as a DNS server but not as a DHCP server it cannot even know the host names of the devices.
+
+In order for Pi-hole to be able to resolve the IPs "Conditional Forwarding" must be activated.\
+To do this log into the Pi-hole web console as an admin and navigate to "Settings → tab: DNS → section: Advanced DNS settings".
+Check the box and enter IP address and local domain name of the Fritzbox. For Fritzbox this is by default _fritz.box_.
+
+![dns-settings-pi-hole](/static/blog/2019-12-29-pi-hole-local-hostnames.png 'DNS configuration dialog Pi-hole')
+
+<NoticeBox
+  type="blue"
+  heading="Hint"
+  content={[
+    {
+      text:
+        'After this setting has been made the Fritzbox should be accessible again via fritz.box.',
+    },
+  ]}
+/>
+
+### Testing the adblocker
+
+Once installation and configuration have been successfully completed, you can simply check the functionality of Pi-hole by opening an app in which advertising was previously displayed.
+Below is a before and after picture of a weather app which is no longer able to display advertising.
+
+| Before                                                                               | After                                                                                                |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| ![app-before-with-ads](/static/blog/2019-12-29-app-before.PNG 'App before with ads') | ![app-after-without-ads](/static//blog/2019-12-29-app-after.PNG 'App after Pi-hole DNS without ads') |
+
+How each individual app deals with the fact that no advertising can be displayed depends heavily on the app itself. In the case above a placeholder is displayed instead of the advertisement.
+Although I didn't gain anything in terms of space and still have to scroll to the next area but at least the advertising disappeared.
+
+### Conclusion
+
+In summary it can be said that the setup of [Pi-hole](https://pi-hole.net/) was relatively easy and the result is satisfactory.
+My network has its own little black hole for advertising now and will be a little more ad-free.
+
+Many thanks to [Dan Schaper](https://github.com/dschaper) and the team that makes Pi-hole possible.

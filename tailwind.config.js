@@ -26,8 +26,18 @@ module.exports = {
         sans: ['var(--font-space-grotesk)', ...fontFamily.sans],
       },
       colors: {
-        primary: colors.pink,
-        gray: colors.gray,
+        primary: colors.teal,
+        gray: colors.neutral,
+        noticeBoxBlue: {
+          light: '#d9edf7',
+          DEFAULT: '#bce8f1',
+          dark: '#31708f',
+        },
+        noticeBoxRed: {
+          light: '#f2dede',
+          DEFAULT: '#ebccd1',
+          dark: '#a94442',
+        },
       },
       zIndex: {
         60: '60',
@@ -39,25 +49,18 @@ module.exports = {
           css: {
             color: theme('colors.gray.700'),
             '.blue': {
-              backgroundColor: theme('colors.blue.200'),
-              color: theme('colors.blue.700'),
-            },
-            '.yellow': {
-              backgroundColor: theme('colors.yellow.200'),
-              color: theme('colors.yellow.700'),
+              backgroundColor: theme('colors.noticeBoxBlue.light'),
+              color: theme('colors.noticeBoxBlue.dark'),
             },
             '.red': {
-              backgroundColor: theme('colors.red.200'),
-              color: theme('colors.red.700'),
+              backgroundColor: theme('colors.noticeBoxRed.light'),
+              color: theme('colors.noticeBoxRed.dark'),
             },
             '.shadow-blue': {
-              boxShadow: '0 10px 15px -3px #bae6fd, 0 4px 6px -2px #bae6fd',
-            },
-            '.shadow-yellow': {
-              boxShadow: '0 10px 15px -3px #fde68a, 0 4px 6px -2px #fde68a',
+              boxShadow: '0 6px 10px -5px #bce8f1, 0 4px 6px -2px #31708f',
             },
             '.shadow-red': {
-              boxShadow: '0 10px 15px -3px #fecaca, 0 4px 6px -2px #fecaca',
+              boxShadow: '0 6px 10px -5px #ebccd1, 0 4px 6px -2px #a94442',
             },
             a: {
               color: theme('colors.primary.500'),

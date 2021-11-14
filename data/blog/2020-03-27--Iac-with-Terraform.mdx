@@ -1,0 +1,66 @@
+---
+title: Blog infastructure with Terraform
+date: '2020-03-27'
+tags: ['IaC', 'AWS', 'Cloudfront', 'Terraform', 'HTTPS', 'DNS', 'Route53']
+draft: false
+summary: This post describes how the Tailwind blog can be served over HTTPS with AWS Cloudfront. The entire AWS infrastructure is managed via Terraform as infrastructure as code (IaC).
+---
+
+## Preface
+
+This blog was previously hosted on [Amazon S3 as a static website](https://docs.aws.amazon.com/de_de/AmazonS3/latest/dev/WebsiteHosting.html).
+That worked, but it has some limitations:
+
+- Visitors access the S3 bucket directly. Since there is no caching by default, the static S3 website solution may become expensive for popular pages and large files. The [S3 Pricing Model](https://aws.amazon.com/de/s3/pricing/) provides that outgoing traffic to the Internet is billed.
+- Since there is no content delivery network (CDN) with edge servers for caching content, the delivery of the content may be slow.
+- The configuration options are very limited.
+- There is no way to deliver the page via HTTPS.
+
+This blog is relatively small and generates little traffic. The crucial point for me to place Cloudfront in front of the S3 bucket was the possibility of being able to deliver the page encrypted via HTTPS.
+
+## Infrastructure Overview
+
+![blog-infrastructure](/static/blog/2020-03-27-blog-infrastucture.png 'technical infrastructure of divisionby0 blog')
+
+The image above shows the target infrastructure. Visitors will no longer have direct access to the S3 bucket. Instead the content will be delivered via **AWS Cloudfront**.
+
+The advantage of using AWS Cloudfront is its ability to cache assets such as style sheets and script files or even images on edge servers (CDN - Conent Delivery Network).
+These edge servers are much closer to the visitor than the S3 bucket, viewed from a network perspective.
+This allows the page to load faster and the traffic to the S3 bucket (Origin) is reduced.
+
+A **Cloudfront-Origin-Access-Identity** is used to access the S3 bucket. The bucket is configured by a policy in such a way that this identity has read access to the bucket.
+
+Cloudfront uses a SSL certificate managed by **AWS Certificate Manager**. In order for AWS to verify that you own the domain, the certificate must be validated.
+Validation can be done via email or DNS entry, in the current case the validation is done via DNS.
+
+If Amazon manages to successfully resolve the DNS entry, it is ensured that the domain is in your possession.
+The resolution is only possible if you are able to store the DNS-TXT record for validation on the domain.
+
+<NoticeBox
+  type="blue"
+  heading="Hint"
+  content={[
+    {
+      text:
+        'Terraform supports you at this point, as it automatically creates the corresponding TXT record via <b>Route 53</b> in the blogs hosted zone. This is not so easily possible via <b>AWS Cloudformation</b>.',
+    },
+  ]}
+/>
+
+The validation entries are stored in **Route 53**, but it has more that just these. There are A-Records for [divisionby0.de](https://divisionby0.de) and the subdomain [www.divisionby0.de](https://www.divisionby0.de), so that the page can be reached both with and without _www_.
+Furthermore a A-Record for the subdomain [nestingbox.divisionby0.de](http://nestingbox.divisionby0.de) is stored here, which is used to receive the stream of the nesting box camera.
+
+The IP address for the record is regularly updated automatically, as I described in the article [DynDNS with AWS](https://divisionby0.de/blog/2019-09-15--AWS-DynDNS).
+
+## Terraform
+
+The components described above were not configured manually via the AWS Management Console, but described as "Infrastructure as Code".
+
+I chose [Terraform from HashiCorp](https://www.terraform.io/) as the description language, as it is very well documented and offers the following advantages for the current task:
+
+- The DNS validation of the certificate can be carried out automatically. Terraform can set the TXT records for validation and to proceed with it by using the Terraform resources `aws_acm_certificate`,`aws_route53_record` and `aws_acm_certificate_validation` (see [Link](https://www.terraform.io/docs/providers/aws/r/acm_certificate_validation.html)).
+- It is easy to tag resources using local variables. With AWS Cloudformation, either each resource individually or the stack used to created the resources would have to be tagged.
+- The certificate and the Cloudfront distribution must be in the AWS region `us-east-1`. With Terraform this can be easily achieved using a [Provider](https://www.terraform.io/docs/providers/aws/index.html) and assigning it to different resources.
+
+The infrastructure in form of Terraform scripts can be found under [DivisionBy0-Infrastructure Repository on GitHub](https://github.com/CNoetzel/DivisionBy0-Infrastructure).
+There you will also find tips on how you can use them for your own projects.

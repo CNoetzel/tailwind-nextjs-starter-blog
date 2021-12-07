@@ -3,7 +3,7 @@ title: Goodbye Gatsby, Hello NextJS
 date: '2021-11-16'
 tags: ['NextJS', 'Tailwind']
 draft: false
-summary: If've decided to move from Gatsby Lumen blog to a different starter project based on NextJS.
+summary: I've decided to move from Gatsby Lumen blog to a different starter project based on NextJS.
 ---
 
 In 2019 I've created this blog based on the [gatsby-starter-lumen](https://github.com/alxshelepenok/gatsby-starter-lumen) project by Alexander Shelepenok.

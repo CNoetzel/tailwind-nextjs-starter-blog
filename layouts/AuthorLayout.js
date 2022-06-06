@@ -3,18 +3,8 @@ import Image from '@/components/Image'
 import { PageSEO } from '@/components/SEO'
 
 export default function AuthorLayout({ children, frontMatter }) {
-  const {
-    name,
-    avatar,
-    occupation,
-    company,
-    email,
-    twitter,
-    linkedin,
-    github,
-    xing,
-    facebook,
-  } = frontMatter
+  const { name, avatar, occupation, company, email, twitter, linkedin, github, xing, facebook } =
+    frontMatter
 
   return (
     <>

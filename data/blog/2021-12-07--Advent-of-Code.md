@@ -3,6 +3,7 @@ title: Advent of Code 2021
 date: '2021-12-01'
 tags: ['Python', 'Advent of code']
 draft: false
+images: ['/static/blog/2021-12-07-advent-of-code.png']
 summary: The Advent of code event has begun shortly and different to last years event im using Python to solve the puzzles.
 ---
 

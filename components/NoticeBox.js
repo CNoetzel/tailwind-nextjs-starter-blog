@@ -3,7 +3,7 @@ import Image from 'next/image'
 
 const NoticeBox = ({ type, heading, content }) => {
   return (
-    <div className={`rounded overflow-hidden shadow-${type}`}>
+    <div className={`overflow-hidden·rounded shadow-${type}`}>
       <div className={`${type} px-2 font-bold`}>{heading}</div>
       <div className="px-2">
         {content.map(({ isCode, text, image }, index) => {

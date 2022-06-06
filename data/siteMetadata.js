@@ -10,7 +10,7 @@ const siteMetadata = {
   siteRepo: 'https://github.com/CNoetzel/tailwind-nextjs-starter-blog',
   siteLogo: '/static/images/logo.png',
   image: '/static/images/avatar.png',
-  socialBanner: '',
+  socialBanner: '/static/images/social_banner.png',
   email: 'webmaster@divisionby0.de',
   github: 'https://github.com/CNoetzel',
   twitter: '',

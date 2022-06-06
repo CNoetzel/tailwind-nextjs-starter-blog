@@ -15,3 +15,9 @@ Hopefully I can use my exprience from the mentioned project to customize the blo
 Additionally the blog posts will be written in English to get additional range. I took the trouble to translate all the old posts into English.
 
 The blog is built and hosted via [Vercel](https://vercel.com/) now, so the blog post from 2020-03-27 [Blog infastructure with Terraform](../blog/2020-03-27--Iac-with-Terraform) is outdated.
+
+You can see that the Build-Pipeline, the S3-Bucket and the CloudFront distribution have been removed, but the custom domain and the certificate are still managed by AWS.
+
+| Old Infrastructure                                                                            | New Infrastructure                                                                               |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| ![infrastructure-before](/static/blog/2020-03-27-blog-infrastucture.png 'Old infrastructure') | ![infrastructure-after](/static/blog/2021-11-16-blog-infrastucture_new.png 'New infrastructure') |

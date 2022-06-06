@@ -7,6 +7,7 @@ import TOCInline from './TOCInline'
 import Pre from './Pre'
 import { BlogNewsletterForm } from './NewsletterForm'
 import NoticeBox from './NoticeBox'
+import CredlyBadge from './CredlyBadge'
 
 export const MDXComponents = {
   Image,
@@ -19,6 +20,7 @@ export const MDXComponents = {
     return <Layout {...rest} />
   },
   NoticeBox,
+  CredlyBadge,
 }
 
 export const MDXLayoutRenderer = ({ layout, mdxSource, ...rest }) => {

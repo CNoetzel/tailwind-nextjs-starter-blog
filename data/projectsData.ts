@@ -18,6 +18,12 @@ const projectsData: Project[] = [
     imgSrc: '/static/brood2018/01-20180413114739-00.jpg',
     href: '../blog/2019-07-11--Nesting-box-camera',
   },
+  {
+    title: 'HelloFresh Recipe-Downloader',
+    description: `A small script that allows you to download recipe cards of recently ordered recipes from HelloFresh.`,
+    imgSrc: '/static/blog/2022-12-26-hello-download_small.png',
+    href: '../blog/2022-12-26--HelloFresh-RecipeDownloader',
+  },
 ]
 
 export default projectsData

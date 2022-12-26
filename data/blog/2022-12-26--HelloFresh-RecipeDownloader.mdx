@@ -1,0 +1,37 @@
+---
+title: HelloFresh Recipe-Downloader
+date: '2022-12-26'
+tags: ['Python', 'HelloFresh', 'Scripting', 'Recipes']
+draft: false
+images: ['/static/blog/2022-12-26-hello-download.png']
+summary: You wan't to digitalize your delicious HelloFresh recipes but don't want to scan them all in bad quality or manually downloading them? Just use the simple script I've implemented for this task.
+---
+
+![downloader-image](/static/blog/2022-12-26-hello-download.png 'image displaying the purpose of the script')
+
+[HelloFresh](https://www.hellofreshgroup.com/en/) is a 2011 founded german company that sells cooking boxes in different countries all over the world. Their mission is to provide fresh, tasty and sustainable meals for little money and help people to save time (no shopping), eat healthy and try new stuff.
+
+Between 2020 and 2022 I've ordered plenty of these boxes and the range of meals I'm cooking regularly has quickly grown. Furthermore I was also able to try dishes from all over the world and learned a few new tricks. Who would have thought that peanut butter could be used in so many ways, or that you could cook rice in coconut milk. 🤯
+
+Recently I came to the point where I wanted to digitalize all of my recipe cards where some of which have already suffered from repeated use. I've started scanning them but quickly realized, that I'm not happy with the quality of the scans. So I visited the webpage and noticed that you can search for recipes there and some of the recipes also offer a download of the recipe card.
+
+As I didn't want to search all my recipes manually I've investigated further and noticed, that recent deliveries are also displayed in your personal account area.
+
+So I did what have to be done... I had a look at the API calls that were made to retrieve the information regarding recent deliveries and recipe pages that are displayed on the website.
+
+The result is little Python-Script that allows you to download the recipes of your recent deliveries. The project can be viewed on GitHub (see: [HelloFresh-RecipeDownloader](https://github.com/CNoetzel/HelloFresh-RecipeDownloader)) where you'll also find instructions on how to use the script.
+
+You have to provide you `access_token` manually after login to access the recent deliveries as the login is sensibly protected by mechanisms that prevent automated login.
+
+<NoticeBox
+  type="blue"
+  heading="Information"
+  content={[
+    {
+      text: "The script does nothing that you can't do manually by sufring on the website.",
+    },
+    {
+      text: "The script allows you to download <u>only recipes which you have already ordered</u> and for which you should have a physical recipe card. It doesn't allow you to download all the HelloFresh-Recipes.</br></br>",
+    },
+  ]}
+/>

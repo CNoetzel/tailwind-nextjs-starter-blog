@@ -1,0 +1,57 @@
+---
+title: Flashing the dead Gosund socket
+date: '2023-02-13'
+tags:
+  ['Smart Plug', 'Homeautomation', 'HomeAssistant', 'Gosund', 'EP2', 'RaspberryPi', 'Tuya-Convert']
+draft: false
+images: ['/static/blog/2023-02-12-gosund_smart_plug_small.png']
+summary: I successfully flashed the Dead Socket with Tasmota.
+---
+
+I did succeed getting the last socket running which was unreachable before as mentioned in my [last blog article](https://www.divisionby0.de/blog/2023-02-12--Gosund-EP2-Tasmota-flash). 🥳
+
+The socket wasn't reachable during flash (see console output below), but its MAC address was present when inspecting the `smarthack-wifi.log` in `scripts`-folder.
+
+```
+======================================================
+Starting smart config pairing procedure
+Waiting for the device to install the intermediate firmware
+
+IoT-device is online with ip 10.42.42.42
+Stopping smart config
+Fetching firmware backup
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (7) Failed to connect to 10.42.42.42 port 80: Connection refused
+Could not fetch a complete backup
+Do you want to continue anyway? [y/N] y
+======================================================
+Getting Info from IoT-device
+======================================================
+Ready to flash third party firmware!
+
+For your convenience, the following firmware images are already included in this repository:
+  Tasmota v8.1.0.2 (wifiman)
+  ESPurna 1.13.5 (base)
+
+You can also provide your own image by placing it in the /files directory
+Please ensure the firmware fits the device and includes the bootloader
+MAXIMUM SIZE IS 512KB
+
+Available options:
+  0) return to stock
+  1) flash espurna.bin
+  2) flash tasmota.bin
+  q) quit; do nothing
+Please select 0-2: 2
+Are you sure you want to flash tasmota.bin? This is the point of no return [y/N] y
+Attempting to flash tasmota.bin, this may take a few seconds...
+Could not reach the device!
+```
+
+All I had to do was start pining the device with `ping 10.42.42.42`, removing the socket from my wall plug and then putting it back in.
+The ping command should reach the device again and generate output.
+After doing this I was able to flash the socket successfully with Tasmota.
+
+Tyua-convert issue [Socket won't flash #613](https://github.com/ct-Open-Source/tuya-convert/issues/613) on GitHub helped my solving this problem.

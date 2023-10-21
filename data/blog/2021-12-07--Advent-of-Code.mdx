@@ -3,11 +3,10 @@ title: Advent of Code 2021
 date: '2021-12-01'
 tags: ['Python', 'Advent of code']
 draft: false
+layout: PostBanner
 images: ['/static/blog/2021-12-07-advent-of-code.png']
 summary: The Advent of code event has begun shortly and different to last years event im using Python to solve the puzzles.
 ---
-
-![table-with-notebooks](/static/blog/2021-12-07-advent-of-code.png 'advent of code pair programming')
 
 [Advent of code](https://adventofcode.com/) is an yearly recurring event which gives you 25 puzzles to solve in an programming language of your choice. Each day another puzzle is made available.
 

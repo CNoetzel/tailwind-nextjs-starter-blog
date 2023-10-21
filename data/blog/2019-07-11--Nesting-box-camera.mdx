@@ -55,17 +55,15 @@ sudo apt-get install motion
 ```
 
 <NoticeBox
-  type="blue"
+  type="info"
   heading="Note"
   content={[
     {
-      text:
-        'If during installation the message <span style="color:red; font-family: Consolas, Monaco, &apos;Andale Mono&apos;, &apos;Ubuntu Mono&apos;, monospace;word-break: break-all;">Failed to fetch http://raspbian.raspberrypi.org/raspbian/pool/main/p/postgresql-11/libpq5_11.3-1_armhf.deb</span> appears an apt update should be carried out (see <a href="https://www.raspberrypi.org/forums/viewtopic.php?t=63276&p=1495729" target="_blank">link</a>).',
+      text: 'If during installation the message <span style="color:red; font-family: Consolas, Monaco, &apos;Andale Mono&apos;, &apos;Ubuntu Mono&apos;, monospace;word-break: break-all;">Failed to fetch http://raspbian.raspberrypi.org/raspbian/pool/main/p/postgresql-11/libpq5_11.3-1_armhf.deb</span> appears an apt update should be carried out (see <a href="https://www.raspberrypi.org/forums/viewtopic.php?t=63276&p=1495729" target="_blank">link</a>).',
     },
     { isCode: true, text: 'sudo apt update --allow-releaseinfo-change\nsudo apt-get upgrade' },
     {
-      text:
-        'The parameter allows the update command to continue downloading data from a repository which changed its information of the release contained in the repository indicating e.g a new major release.',
+      text: 'The parameter allows the update command to continue downloading data from a repository which changed its information of the release contained in the repository indicating e.g a new major release.',
     },
   ]}
 />

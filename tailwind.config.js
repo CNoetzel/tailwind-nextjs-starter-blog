@@ -28,15 +28,13 @@ module.exports = {
       colors: {
         primary: colors.teal,
         gray: colors.neutral,
-        noticeBoxBlue: {
-          light: '#d9edf7',
-          DEFAULT: '#bce8f1',
-          dark: '#31708f',
+        noticeBoxInfo: {
+          bg: colors.sky[300],
+          text: colors.sky[900],
         },
-        noticeBoxRed: {
-          light: '#f2dede',
-          DEFAULT: '#ebccd1',
-          dark: '#a94442',
+        noticeBoxWarn: {
+          bg: colors.red[800],
+          text: colors.red[50],
         },
       },
       zIndex: {
@@ -47,20 +45,19 @@ module.exports = {
       typography: ({ theme }) => ({
         DEFAULT: {
           css: {
-            color: theme('colors.gray.700'),
-            '.blue': {
-              backgroundColor: theme('colors.noticeBoxBlue.light'),
-              color: theme('colors.noticeBoxBlue.dark'),
+            '.info': {
+              backgroundColor: theme('colors.noticeBoxInfo.bg'),
+              color: theme('colors.noticeBoxInfo.text'),
             },
-            '.red': {
-              backgroundColor: theme('colors.noticeBoxRed.light'),
-              color: theme('colors.noticeBoxRed.dark'),
+            '.warn': {
+              backgroundColor: theme('colors.noticeBoxWarn.bg'),
+              color: theme('colors.noticeBoxWarn.text'),
             },
-            '.shadow-blue': {
-              boxShadow: '0 6px 10px -5px #bce8f1, 0 4px 6px -2px #31708f',
+            '.container-info': {
+              borderColor: theme('colors.noticeBoxInfo.bg'),
             },
-            '.shadow-red': {
-              boxShadow: '0 6px 10px -5px #ebccd1, 0 4px 6px -2px #a94442',
+            '.container-warn': {
+              borderColor: theme('colors.noticeBoxWarn.bg'),
             },
             a: {
               color: theme('colors.primary.500'),

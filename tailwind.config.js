@@ -26,7 +26,7 @@ module.exports = {
         sans: ['var(--font-space-grotesk)', ...fontFamily.sans],
       },
       colors: {
-        primary: colors.teal,
+        primary: colors.cyan,
         gray: colors.neutral,
         noticeBoxInfo: {
           bg: colors.sky[300],

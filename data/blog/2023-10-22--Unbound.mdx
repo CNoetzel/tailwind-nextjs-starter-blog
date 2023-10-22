@@ -1,0 +1,172 @@
+---
+title: Enhancing Pi-hole with Unbound
+date: '2023-10-22'
+tags: ['Unbound', 'Pi-hole', 'adblocker', 'DNS', 'privacy']
+draft: false
+summary: Today I'm going to pimp my Pi-hole installation with Unbound acting as recursive DNS resolver.
+---
+
+## Preface
+
+A few years ago, I set up and configured Pi-hole as a network-based ad blocker (see [Network adblocker Pi-hole](https://www.divisionby0.de/blog/2019-12-29--Network-Ad-Blocker)).
+Since then Pi-hole has been performing excellent services blocking ads across the entire home network.
+To further enhance privacy and ensure that even the DNS providers have no means to track which requests are being sent Unbound will be set up as recusive DNS resolver.
+
+## What's Unbound?
+
+Unbound is a validating, recursive, and caching DNS resolver. Essentially, it is a software component that helps in translating domain names into IP addresses and vice versa, facilitating the smooth functioning of the internet.
+
+In contrast to regular DNS resolution with Pi-hole the root DNS servers are directly addressed and the DNS path is traversed through the TLD DNS to the authoritative name server until the IP address for the requested hostname is ultimately obtained from the latter.
+It then stores this information in a cache to expedite future requests for the same domain name. It also verifies the authenticity of the DNS data received, ensuring a secure and reliable browsing experience.
+This setup enables Unbound to provide improved security, privacy, and performance compared to some other DNS resolvers.
+
+Because the DNS queries aren't forwarded to external DNS servers, they have no way of tracking the path.
+For example Google DNS servers are only accessed when visiting a Google website.
+
+One disadvantage of this approach is that at least for the initial resolution it may take a bit more time since the entire path has to be resolved.
+Subsequent requests to domains under the same TLD usually complete in < 0.1s.
+
+For more detailed information have a look at [Pi-hole unbound documentation](https://docs.pi-hole.net/guides/dns/unbound/).
+
+## Installation
+
+The installation of Unbound is pretty simple.
+First SSH into your Pi-hole machine and install the recusrive DNS respolver.
+
+```bash
+sudo apt install unbound -y
+```
+
+Afterwards create a pi-hole config file and paste the following content.
+
+```bash
+sudo nano -w /etc/unbound/unbound.conf.d/pi-hole.conf
+```
+
+It will setup Unbound to listen for UDP/TCP queries from the local Pi-hole installation (on port 5335)
+and verify DNSSEC signatures. This config is copied from [Pi-hole unbound documentation](https://docs.pi-hole.net/guides/dns/unbound/), where you'll find further information.
+
+```yaml
+server:
+    # If no logfile is specified, syslog is used
+    # logfile: "/var/log/unbound/unbound.log"
+    verbosity: 0
+
+    interface: 127.0.0.1
+    port: 5335
+    do-ip4: yes
+    do-udp: yes
+    do-tcp: yes
+
+    # May be set to yes if you have IPv6 connectivity
+    do-ip6: no
+
+    # You want to leave this to no unless you have *native* IPv6. With 6to4 and
+    # Terredo tunnels your web browser should favor IPv4 for the same reasons
+    prefer-ip6: no
+
+    # Use this only when you downloaded the list of primary root servers!
+    # If you use the default dns-root-data package, unbound will find it automatically
+    #root-hints: "/var/lib/unbound/root.hints"
+
+    # Trust glue only if it is within the server's authority
+    harden-glue: yes
+
+    # Require DNSSEC data for trust-anchored zones, if such data is absent, the zone becomes BOGUS
+    harden-dnssec-stripped: yes
+
+    # Don't use Capitalization randomization as it known to cause DNSSEC issues sometimes
+    # see https://discourse.pi-hole.net/t/unbound-stubby-or-dnscrypt-proxy/9378 for further details
+    use-caps-for-id: no
+
+    # Reduce EDNS reassembly buffer size.
+    # IP fragmentation is unreliable on the Internet today, and can cause
+    # transmission failures when large DNS messages are sent via UDP. Even
+    # when fragmentation does work, it may not be secure; it is theoretically
+    # possible to spoof parts of a fragmented DNS message, without easy
+    # detection at the receiving end. Recently, there was an excellent study
+    # >>> Defragmenting DNS - Determining the optimal maximum UDP response size for DNS <<<
+    # by Axel Koolhaas, and Tjeerd Slokker (https://indico.dns-oarc.net/event/36/contributions/776/)
+    # in collaboration with NLnet Labs explored DNS using real world data from the
+    # the RIPE Atlas probes and the researchers suggested different values for
+    # IPv4 and IPv6 and in different scenarios. They advise that servers should
+    # be configured to limit DNS messages sent over UDP to a size that will not
+    # trigger fragmentation on typical network links. DNS servers can switch
+    # from UDP to TCP when a DNS response is too big to fit in this limited
+    # buffer size. This value has also been suggested in DNS Flag Day 2020.
+    edns-buffer-size: 1232
+
+    # Perform prefetching of close to expired message cache entries
+    # This only applies to domains that have been frequently queried
+    prefetch: yes
+
+    # One thread should be sufficient, can be increased on beefy machines. In reality for most users running on small networks or on a single machine, it should be unnecessary to seek performance enhancement by increasing num-threads above 1.
+    num-threads: 1
+
+    # Ensure kernel buffer is large enough to not lose messages in traffic spikes
+    so-rcvbuf: 1m
+
+    # Ensure privacy of local IP ranges
+    private-address: 192.168.0.0/16
+    private-address: 169.254.0.0/16
+    private-address: 172.16.0.0/12
+    private-address: 10.0.0.0/8
+    private-address: fd00::/8
+    private-address: fe80::/10
+```
+
+Close nano by pressing `CTRL + X` and `ENTER` to save the file and restart Unbound.
+
+```bash
+sudo service unbound restart
+```
+
+Now we can check our installtion by sending a DNS query.
+
+```bash
+dig divisionby0.de @127.0.0.1 -p 5335
+```
+
+The first request might be quiet slow, but subsequent queries will be pretty fast as you can see in the pictures below.
+
+<Image
+  alt="first-dns-request"
+  src="/static/blog/2023-10-22-first-request.png"
+  width={625}
+  height={341}
+/>
+
+<Image
+  alt="first-dns-request"
+  src="/static/blog/2023-10-22-second-request.png"
+  width={625}
+  height={341}
+/>
+
+Unbound is up and running, time to configure Pi-hole to use the local Unbound installation as DNS resvolver.
+Login to Pi-hole UI and navigate to "Settings → DNS". Remove the selected Upstream DNS servers (DNS.WATCH and Quad9 in my case) and enter
+the Unbound address and port `127.0.0.1#5335`. Save the changes and every DNS resolution should be managed by Unbound from now on.
+
+<Image
+  alt="pi-hole-config"
+  src="/static/blog/2023-10-22-pi-hole-config.png"
+  width={988}
+  height={798}
+/>
+
+<NoticeBox
+  type="info"
+  heading="Hint"
+  content={[
+    {
+      text: 'Users running their Pi-hole installation on Debian Bullseye+ releases have to disable resolve.conf entry. \
+      See <a href="https://docs.pi-hole.net/guides/dns/unbound/#disable-resolvconfconf-entry-for-unbound-required-for-debian-bullseye-releases">Pi-hole documentation</a>',
+    },
+  ]}
+/>
+
+## Conclusion
+
+I used [DNS.WATCH](https://dns.watch/) and [Quad9](https://www.quad9.net/about/) before switching to Unbound.
+Both providers offer fast and securce DNS resolution respecting privacy.
+But it's pretty simple to setup Unbound with Pi-hole, so I wanted to play around and give it a try 🤷‍♂️.

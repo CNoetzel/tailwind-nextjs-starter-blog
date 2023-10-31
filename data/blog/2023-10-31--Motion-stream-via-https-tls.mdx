@@ -1,0 +1,176 @@
+---
+title: Let's Encrypt TLS certificate for nesting box live stream
+date: '2023-10-31'
+tags: ['Motion', 'Terraform', 'Lets encrypt', 'TLS', 'HTTPS']
+draft: false
+summary: What's better than having a nesting box live stream? Having a TLS encrypted live stream that can be accessed via https.
+---
+
+## Preface
+
+One of my first projects was [building a nesting box](https://www.divisionby0.de/blog/2019-07-11--Nesting-box-camera) with a camera which is publicly accessible via [nestingbox.divisionby0.de](https://nestingbox.divisionby0.de).
+Since then it has bothered me that the stream could only be accessed via http and I did not have a TLS certificate to encrypt the stream.
+Today I took the time to change this.
+
+## Motion support for TLS
+
+[Motion](https://motion-project.github.io) is a program that monitors the video signal of one or more cameras and is able to detect movement for triggering events like sending an email or start recording a video.
+It's used as software on my nesting box Raspberry Pi to provide a video steam and offers TLS encryption since version 4.2 via [stream_tls](https://motion-project.github.io/4.4.0/motion_config.html#stream_tls) config parameter.
+
+When enabling TLS `webcontrol_cert` and `webcontrol_key` have to be configured with a local certificate and private key file, but how to obtain these files?
+
+### Option 1: Self-Signed certificates
+
+On first option is to create a self-signed certificate for usage with motion by executing the following command:
+
+```bash
+sudo openssl req -x509 -sha256 -nodes -days 356 -newkey rsa:2048 -keyout motion.key -outform pem -out motion.pem -subj "/CN=divisionby0.de"
+```
+
+As you can read in the [docs](https://www.openssl.org/docs/man1.0.2/man1/req.html) this will create a self-signed certificate which is valid for 356 days and an unencrypted 2048-bit-RSA private key file `motion.key` as well as the certificate `motion.pem`.
+You are now able to refence these files in the config parameters mentioned above, but you will see a warning when accessing the stream as you are a using a self-signed certificate which can not be verifed and therefore your browser won't trust it.
+
+If you only want to use TLS in the local network and there is a limited number of callers you may ignore this fact and use self-signed certificates.
+
+### Option 2: Signed certificates
+
+There are several ways to create an official, verifiable certificate. As you may know, I use AWS for parts of this blog and it would be obvious to use the AWS Certificate Manager to create a certificate.
+But certificates issued by AWS Certificate Manager can only be used inside AWS and there is no option to export those certificates to use them on my Raspberry Pi with Motion.
+
+That's why I decided to have the certificates created and signed with [Let's Encrypt](https://letsencrypt.org), a nonprofit Certificate Authorithy providing TLS cerritificates for free.
+Fortunately, there is also a Terraform provider (see [vancluever/acme](https://registry.terraform.io/providers/vancluever/acme/latest/docs)) to automate request and validation.
+
+The provider uses the Automated Certificate Management Environment (ACME) in which clients autonomously register with the authority using their private key and respond to challenges by providing response data via HTTP or DNS over the domains for which the certificate is to be issued.
+This ensures that the requesting party has control over the domains and therefore the permission to request certificates.
+
+My Terraform files are public accessible in the [DivisionBy0-Infrastructure](https://github.com/CNoetzel/DivisionBy0-Infrastructure/blob/master/modules/blog/main.tf) repository, the parts worth to mention are explained below.
+
+```
+provider "acme" {
+  server_url = "https://acme-v02.api.letsencrypt.org/directory"
+}
+```
+
+Tell the provider which server to use to create the certificate (use `https://acme-staging-v02.api.letsencrypt.org/directory` for testing purposes).
+
+```
+resource "tls_private_key" "private_key" {
+  algorithm = "RSA"
+}
+```
+
+Create a RSA private key file.
+
+```
+resource "acme_registration" "registration" {
+  account_key_pem = tls_private_key.private_key.private_key_pem
+  email_address   = "webmaster@${local.domainName}"
+}
+```
+
+And use this file to create a registration at ACME.
+
+```
+resource "acme_certificate" "certificate" {
+  account_key_pem           = acme_registration.registration.account_key_pem
+  common_name               = aws_route53_zone.hosted_zone.name
+  subject_alternative_names = ["*.${aws_route53_zone.hosted_zone.name}"]
+
+  dns_challenge {
+    provider = "route53"
+
+    config = {
+      AWS_HOSTED_ZONE_ID      = aws_route53_zone.hosted_zone.zone_id
+      AWS_POLLING_INTERVAL    = 30
+      AWS_PROPAGATION_TIMEOUT = 600
+    }
+  }
+}
+```
+
+Create the ACME TLS certificate and verify domain ownership via DNS entries in Route53.
+
+**Note:** The certificate creation took 14 minutes and I had to modify `POLLING_INTERVAL` and `PROPAGATION_TIMEOUT` not to run into timeouts.
+
+```
+resource "aws_s3_bucket" "certificate_bucket" {
+  bucket = "lets-encrypt-certificate"
+
+  server_side_encryption_configuration {
+    rule {
+      bucket_key_enabled = false
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+}
+
+resource "aws_s3_bucket_object" "certificate_artifacts_s3_objects" {
+  for_each = toset(["certificate_pem", "issuer_pem", "private_key_pem"])
+
+  bucket  = aws_s3_bucket.certificate_bucket.id
+  key     = "ssl-certs/${each.key}"
+  content = lookup(acme_certificate.certificate, "${each.key}")
+}
+```
+
+Finally store the created files (certificate, private key and issuer) in a S3-Bucket.
+
+<NoticeBox
+  type="warn"
+  heading="Attention"
+  content={[
+    {
+      text: 'Certificate and private key files should be considered as sensitive material for you domain. Ensure that your S3-Bucket is not publicly accessible and delete these files after downloading them.',
+    },
+  ]}
+/>
+
+# Setting up Motion to use the certificate
+
+Once you've downloaded the `certificate_pem` and `private_key_pem` transfer them into the `/etc/motion` folder and adapt the `/etc/motion/motion.conf` as follows:
+
+```
+# Enable/Disable SSL/TLS for the webcontrol port
+webcontrol_tls on
+
+# Full path to the certification file for SSL/TLS support
+webcontrol_cert /etc/motion/certificate_pem
+
+# Full path to the key file for SSL/TLS support
+webcontrol_key /etc/motion/private_key_pem
+
+# Enable/disable SSL/TLS for the stream port
+stream_tls on
+```
+
+Restart motion `sudo systemctl restart motion` and the stream should be accessible via https. 🥳
+
+<NoticeBox
+  type="info"
+  heading="Hint"
+  content={[
+    {
+      text: 'Based on you configuration it may be necessary, to ensure the motion service user has the appropriate permissions to read the the private key and certificate file.',
+    },
+    {
+      image: {
+        src: '/static/blog/2023-10-31-file-permissions.png',
+        alt: 'file-permissions',
+        width: 520,
+        height: 142,
+      },
+    },
+    {
+      text: "If you are exposing the stream to the internet, do not forget to change the port mapping from port 80 to 443 in your router. Otherwise https request wont't routed to you streaming device.",
+    },
+  ]}
+/>
+
+## Final words
+
+Finally my nesting box stream is reachable via https which makes it much easier and safer to access (no manual change from https to http as your browser want's to open all URLs with https and no more warnings abour unsafe URLs).
+Not very complicated but updating motion, searching for suiablte solutions and trying different approached took quite a few hours.
+
+Happy Halloween 🎃

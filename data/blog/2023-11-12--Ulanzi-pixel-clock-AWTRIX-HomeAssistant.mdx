@@ -1,0 +1,126 @@
+---
+title: Ulanzi Smart Pixel Clock + AWTRIX Light + HomeAssistant
+date: '2023-11-12'
+tags: ['HomeAssistant', 'AWTRIX', 'Ulanzi', 'SmartHome']
+draft: false
+layout: PostBanner
+images: ['/static/blog/2023-11-12-awtrix.png']
+summary: Flashing the Ulanzi Pixel clock TC001 with AWTRIX allows it to diplay senordata from HomeAssistant without the need to open the app on you smartphone or browser.
+---
+
+## Preface
+
+Having sensors and taking measurements with HomeAssistant is quite fun, but evertime you want to check that data
+you have to open a webbrowser or the app. Using a device like the [Ulanzi TC001 Smart Pixel Clock](https://www.ulanzi.com/products/ulanzi-pixel-smart-clock-2882)
+allows it to display data collected by HomeAssistant after a few simple steps.
+
+## Flashing Ulanzi Pixel clock TC001 with AWTRIX Light
+
+The first step is to flash the Ulanzi Pixel Clock with [AWTRIX LIGHT](https://blueforcer.github.io/awtrix-light/#/).
+It's a custom firmware with the purpose of easy integration into smarthome setups like HomeAssistant, IOBroker, NodeRed and much more.
+
+To flash the clock connect it via USB3 to your computer and open the [Online Flasher](https://blueforcer.github.io/awtrix-light/#/flasher) in Google Chrome or Microsoft Edge Browser.
+Click on "Connect", select the USB3 port to wich the clock is connected and follow the steps (ensure that you check "Erase device" if your flash it for the first time).
+
+If everything works well AWTRIX will be flashed to the clock and the AWTRIX lettering will appear on the display.
+If it's like that follow the [Quickstart Guide](https://blueforcer.github.io/awtrix-light/#/quickstart) and connect your clock to WiFi.
+
+When I tried to flash my clock I got the following error "Failed to initialize" multiple times.
+
+<Image alt="flash-error" src="/static/blog/2023-11-12-flash-error.png" width={731} height={470} />
+
+Luckily I wasn't the only one having this problem and few minutes of searching brought me to issue [#341](https://github.com/Blueforcer/awtrix-light/issues/341).
+To solve the problem the following steps are necessarry.
+
+- Bring your unflashed Ulanzi Pixel Clock into your Wifi, by connecting your smartphone to the Wifi emitted by the clock and complete Wifi setup
+- The clock should now display an IP address to which you should open in a webbrowser
+- Dowload the latest [firmware release](https://github.com/Blueforcer/awtrix-light/releases) `ulanzi_TC001_x.xx.bin` of AWTRIX
+- Open "About" on the bottom of the page and select "Update firmware"
+- Select the downloaded firmware from your filesystem and wait for the clock to be flashed
+
+Afterwards your clock should have the AWTRIX firmware installed.
+
+## Connecting the clock to HomeAssistant
+
+Communication between HomeAssistant and the Ulanzi clock takes place via MQTT.
+In order to enable HomeAssistant to communicate with Ulanzi the [MQTT integration](https://www.home-assistant.io/integrations/mqtt/) and a broker like [Mosquitto](https://github.com/home-assistant/addons/blob/master/mosquitto/DOCS.md) are necessarry.
+
+After setting up MQTT according to the documentation open a browser, enter the IP address for your Ulanzi clock (should be shown after restarting the clock) and navigate to MQTT.
+Enter the IP address of you HomeAssistant installation and the user created during setup process of the MQTT integration.
+Enable the "HomeAssistant Discovery" toggle, save your configuration and click on "Restart ESP".
+
+<Image
+  alt="mqtt-settings"
+  src="/static/blog/2023-11-12-mqtt-settings.png"
+  width={953}
+  height={830}
+/>
+
+After restarting the navigate to "Settings → Devices & Services → Devices" and search for the prefix you defined in the configuration before.
+The clock should now be visible in HomeAssistant.
+
+<Image
+  alt="clock visible in homeassistant"
+  src="/static/blog/2023-11-12-ha-device.png"
+  width={1013}
+  height={224}
+/>
+
+<NoticeBox
+  type="info"
+  heading="Hint"
+  content={[
+    {
+      text: 'In order to prevent unauthorized access to you Ulanzi web interface I recommend enabling authentication by specifying a username and a password via the "Auth" tab in the AWTRIX UI.',
+    },
+  ]}
+/>
+
+## Sending MQTT messages to Ulanzi clock
+
+To test the display of messages on the Ulanzi pixel clock you can create a simple automation in HomeAssitstant under "Settings → Automations & Scenes".
+Click on "Create Automation" select "Edit as YAML" and paste the following configuration.
+Change `awtrix_XXXXXX` to your own device id and download the icon to display first via the "Icons" tab in web UI of your Ulanzi clock.
+
+```yaml
+alias: Ulanzi Test-Notification
+trigger:
+  - platform: event
+    event_type: ''
+action:
+  - service: mqtt.publish
+    data:
+      qos: '0'
+      topic: awtrix_XXXXXX/notify
+      payload: '{text: "divby0",  "color": "#06b6d4",  "duration": 10,  "icon": 1775}'
+mode: single
+```
+
+Trigger the automation and the clock should display your notification. Congratulations you've finished the setup!
+
+<Image
+  alt="test notification on clock"
+  src="/static/blog/2023-11-12-divby0.png"
+  width={1080}
+  height={407}
+/>
+
+<NoticeBox
+  type="info"
+  heading="Note"
+  content={[
+    {
+      text: 'This is a pretty simple example on how to send messages to the clock. \
+      In order to integrate the clock seamlessly into your smarthome and build powerful automations have a look at the <a href="https://blueforcer.github.io/awtrix-light/#/api" target="_blank">AWTRIX Light API</a>.',
+    },
+    {
+      text: 'Icons can be retrieved from <a href="https://developer.lametric.com/icons" target="_blank">LaMetric Developer</a> and preconfigured flows as well as blueprints from <a href="https://flows.blueforcer.de/" target="_blank">AWTRIX Flows</a>.',
+    },
+  ]}
+/>
+
+## Conclusion
+
+Flashing the Ulanzi TC001 smart pixel clock with AWTRIX and integrate it into HomeAssistant is pretty simple du to the excellent documentaion.
+The next steps will be selecting and transmitting the HomeAssitant data to the clock.
+I'm not sure yet if I want to keep the clock running 24/7 or if I want a daily summary at a specific point in time using the [power-control topic](https://blueforcer.github.io/awtrix-light/#/api?id=power-control), but I'm sure to post about it here 😉.

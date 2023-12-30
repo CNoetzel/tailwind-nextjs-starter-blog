@@ -1,0 +1,151 @@
+---
+title: Enhancing birthday notifications on Ulanzi Smart Pixel Clock
+date: '2023-12-30'
+tags: ['HomeAssistant', 'AWTRIX', 'Ulanzi', 'SmartHome', 'MQTT']
+draft: false
+summary: Birthday notifications on the Ulanzi Smart Pixel Clock with AWTRIX light seemed to work at first galnce but problems arose and the solution was overall not optimal. So I revamped the birthday notifications.
+---
+
+## Preface
+
+In a [blog post from December 28th](http://localhost:3000/blog/2023-12-28--Ulanzi-pixel-clock-AWTRIX-HomeAssistant) I've implemented a birthday notifcation for the Ulanzi smart pixel clock flashed with [AWTRIX Light](https://blueforcer.github.io/awtrix-light/#/).
+Birthdays are read from the Google calendar, which is fed by the birth dates from Google contacts.
+
+My first approach was to read the `description` state attribute of `calendar.geburtstage` every 30 minutes and send a notification to the clock if such an `all_day` event is present.
+I assumed that `{{ state_attr('calendar.geburtstage', 'all_day')}}` would evaluate to `false` if there is no birthday on the current day, but this was false.
+Even when birthdays had already passed, notifications were sent the next day.
+
+Furthermore the solution wasn't able to handle birthdays of multiple persons on the same day.
+
+## Enhancing birthday notifications
+
+The general approach is to use the [calendar trigger](https://www.home-assistant.io/docs/automation/trigger/#calendar-trigger) to get notified about todays birthdays.
+Information about the person is extracted from the trigger summary and stored in an [input text](https://www.home-assistant.io/integrations/input_text/) helper.
+This helper is used to create a noticiation containing all the persons whose birthday is today.
+
+### Store birthdays in "input_text.birthdays"
+
+First step is to created an [input text](https://www.home-assistant.io/integrations/input_text/) helper to store the persons whose birthday is today.
+The following snippet is stored in `configuration.yaml`. The helper should be visible under "Settings → Devices & Services → Helper" after reloading configurations.
+
+```yaml
+input_text:
+  birthdays:
+    name: Todays Birthdays
+    icon: mdi:cake-variant
+```
+
+In `automations.yaml` the following automation is added to fill the input text with data.
+
+```yaml
+- id: 'update_todays_birthdays'
+  alias: Collect birthdays from Google Calendar
+  trigger:
+    - platform: calendar
+      entity_id: calendar.geburtstage
+  action:
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.birthdays
+      data:
+        value: >
+          {% set name = trigger.calendar_event.summary | replace("hat Geburtstag","") | trim %}
+          {{ (name + "," + states('input_text.birthdays')) }}
+  mode: queued
+```
+
+This automation will be triggered when an event is present in the calendar `calendar.geburtstage` for the current day.
+As Google Calendar stores birthday events like "'First name' 'Last name' hat Geburtstag" the suffix "hat Geburtstag" will be removed from `trigger.calendar_event.summary` in order to store the persons name.
+The resulting name is then added to the `input_text.birthdays` with a `,` a seperator.
+Automation `mode` is set to `queued` as this automation will be triggered for ever person individually and we wan't all persons in our `input_text.birthdays`.
+
+If there a multiple persons having birthday on the same day the result in `input_text.birthdays` will look like `Titus,Theodor Fontane,Thomas D,`.
+
+### Reset "input_text.birthdays" every day
+
+To reset `input_text.birthdays` every day a second automation is stored in `automations.yaml` which will be triggered every day at 23:55:00 o'clock.
+It simply sets the value of `input_text.birthdays` to an empty string.
+
+```yaml
+- id: 'cleanup_todays_birthdays'
+  alias: Nightly cleanup automation for todays birthdays
+  trigger:
+    - platform: time
+      at: '23:55:00'
+  action:
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.birthdays
+      data:
+        value: ''
+```
+
+### Send notification to pixel clock
+
+All the persons who are having birthday today are stored in `input_text.birthdays`.
+This data could be used to create an automation for sending a notification to the pixel clock.
+
+```yaml
+- id: 'birthday_notification'
+  alias: Birthday notification
+  trigger:
+    - platform: time_pattern
+      minutes: '/30'
+  condition:
+    - condition: template
+      value_template: |-
+        {{ states('input_text.birthdays') != "unknown" and states('input_text.birthdays') | length > 0 }}
+    - condition: state
+      entity_id: light.awtrix_XXXXXX_matrix
+      state: 'on'
+    - condition: time
+      after: '10:00:00'
+      before: '20:00:00'
+  action:
+    - service: mqtt.publish
+      data:
+        topic: awtrix_XXXXXX/notify
+        payload: |-
+          {% set birthdays = states('input_text.birthdays')[:-1].split(',') %}
+          {% if birthdays | length == 1 %}
+            {% set text = birthdays[0] + ' hat heute Geburtstag!' %}
+          {%- else -%}
+            {% set text = birthdays[:-1] | join(', ') + ' und ' + birthdays | last + ' haben heute Geburtstag!' %}
+          {%- endif %}
+          {
+            "text": "{{ text }}", 
+            "icon": 14004,
+            "repeat": 3,
+            "rainbow": true
+          }
+```
+
+This automation is pretty similar to that I've created before.
+It's triggered every 30 minuted and sends a notification to the pixel clock between 10 and 20 o'clock if the pixel matrix is `on` and (that is new) the `input_text.birthdays` isn't `unknown` (inital value) or empty.
+
+The action uses some [Jinja2 templating magic](https://www.home-assistant.io/docs/configuration/templating/) to split the persons into an array and strip the trailing `,`.
+Different texts are created based on whether one or more people have a birthday today.
+
+<NoticeBox
+  type="info"
+  heading="Note"
+  content={[
+    {
+      text: 'Using the template editor under "Developer Tools → Template" in HomeAssistant is very useful to see in advance what the commands do and get closer to the solution.',
+    },
+  ]}
+/>
+
+## Conclusion
+
+With a little more effort, a significantly better solution than before was created, which is now able to provide information about the birthdays of several people.
+I was also able to deal with templating for the first time and got to know another powerful tool.
+
+<Image
+  alt="birthday notification on pixel clock"
+  src="/static/blog/2023-12-30_birthday_notification.gif"
+  width={1052}
+  height={260}
+/>
+
+Congratulations to todays birthday children [Titus](https://en.wikipedia.org/wiki/Titus), [Theodor Fontane](https://en.wikipedia.org/wiki/Theodor_Fontane) und [Thomas D](https://de.wikipedia.org/wiki/Thomas_D).

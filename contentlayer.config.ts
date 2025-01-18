@@ -143,6 +143,10 @@ export const Authors = defineDocumentType(() => ({
     linkedin: { type: 'string' },
     github: { type: 'string' },
     layout: { type: 'string' },
+    facebook: { type: 'string' },
+    xing: { type: 'string' },
+    badgeId: { type: 'string' },
+    badgeImgSrc: { type: 'string' },
   },
   computedFields,
 }))

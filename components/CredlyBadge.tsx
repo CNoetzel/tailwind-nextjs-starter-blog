@@ -1,7 +1,14 @@
 import Image from './Image'
 import Link from './Link'
 
-const CredlyBadge = ({ badgeId, badgeImgSrc, width = '150', height = '150' }) => (
+interface Props {
+  badgeId: string
+  badgeImgSrc: string
+  width?: number
+  height?: number
+}
+
+const CredlyBadge = ({ badgeId, badgeImgSrc, width = 150, height = 150 }: Props) => (
   <div style={{ display: 'flex', justifyContent: 'center' }}>
     <Link href={`https://www.credly.com/badges/${badgeId}/public_url`}>
       <Image

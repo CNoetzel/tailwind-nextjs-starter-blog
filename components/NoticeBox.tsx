@@ -1,7 +1,26 @@
 import React from 'react'
 import Image from 'next/image'
 
-const NoticeBox = ({ type, heading, content }) => {
+interface Image {
+  src: string
+  alt: string
+  width: number
+  height: number
+}
+
+interface Content {
+  isCode: boolean
+  text: string
+  image: Image
+}
+
+interface Props {
+  type: string
+  heading: string
+  content: Content[]
+}
+
+const NoticeBox = ({ type, heading, content }: Props) => {
   return (
     <div className={`mb5 overflow-hidden rounded border-2 container-${type}`}>
       <div className={`px-2 font-bold ${type}`}>{heading}</div>

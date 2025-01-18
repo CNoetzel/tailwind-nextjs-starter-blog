@@ -1,6 +1,7 @@
 ---
 title: Blog infastructure with Terraform
 date: '2020-03-27'
+lastmod: '2025-01-18'
 tags: ['IaC', 'AWS', 'Cloudfront', 'Terraform', 'HTTPS', 'DNS', 'Route53']
 draft: false
 summary: This post describes how the Tailwind blog can be served over HTTPS with AWS Cloudfront. The entire AWS infrastructure is managed via Terraform as infrastructure as code (IaC).
@@ -61,5 +62,9 @@ I chose [Terraform from HashiCorp](https://www.terraform.io/) as the description
 - It is easy to tag resources using local variables. With AWS Cloudformation, either each resource individually or the stack used to created the resources would have to be tagged.
 - The certificate and the Cloudfront distribution must be in the AWS region `us-east-1`. With Terraform this can be easily achieved using a [Provider](https://www.terraform.io/docs/providers/aws/index.html) and assigning it to different resources.
 
-The infrastructure in form of Terraform scripts can be found under [DivisionBy0-Infrastructure Repository on GitHub](https://github.com/CNoetzel/DivisionBy0-Infrastructure).
-There you will also find tips on how you can use them for your own projects.
+## Update 18.01.2025
+
+The blog is hosted via [Vercel](https://vercel.com/) since the end of 2023. As suggested in the readme of [timlrx/tailwind-nextjs-starter-blog](https://github.com/timlrx/tailwind-nextjs-starter-blog?tab=readme-ov-file#vercel)
+using Vercel is a pretty easy way to host private websites I've removed the link to my example infrastructure project and set it to private on GitHub.
+
+The domain has been moved from Strato to AWS and Terraform is still used to manage the Route53 entries and other stuff I'm doing with my AWS account. 😉

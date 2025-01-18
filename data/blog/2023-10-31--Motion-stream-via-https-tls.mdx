@@ -1,6 +1,7 @@
 ---
 title: Let's Encrypt TLS certificate for nesting box live stream
 date: '2023-10-31'
+lastmod: '2025-01-18'
 tags: ['Motion', 'Terraform', 'Lets encrypt', 'TLS', 'HTTPS']
 draft: false
 summary: What's better than having a nesting box live stream? Having a TLS encrypted live stream that can be accessed via https.
@@ -43,7 +44,7 @@ Fortunately, there is also a Terraform provider (see [vancluever/acme](https://r
 The provider uses the Automated Certificate Management Environment (ACME) in which clients autonomously register with the authority using their private key and respond to challenges by providing response data via HTTP or DNS over the domains for which the certificate is to be issued.
 This ensures that the requesting party has control over the domains and therefore the permission to request certificates.
 
-My Terraform files are public accessible in the [DivisionBy0-Infrastructure](https://github.com/CNoetzel/DivisionBy0-Infrastructure/blob/master/modules/blog/main.tf) repository, the parts worth to mention are explained below.
+The parts worth to mention are explained below.
 
 ```
 provider "acme" {
@@ -127,7 +128,7 @@ Finally store the created files (certificate, private key and issuer) in a S3-Bu
   ]}
 />
 
-# Setting up Motion to use the certificate
+## Setting up Motion to use the certificate
 
 Once you've downloaded the `certificate_pem` and `private_key_pem` transfer them into the `/etc/motion` folder and adapt the `/etc/motion/motion.conf` as follows:
 

@@ -1,4 +1,6 @@
 {
+  "aws": 4,
+  "certification": 2,
   "homeassistant": 5,
   "awtrix": 3,
   "ulanzi": 3,
@@ -28,8 +30,6 @@
   "scripting": 1,
   "recipes": 1,
   "typescript": 1,
-  "aws": 3,
-  "certification": 1,
   "miflora": 1,
   "openhab": 1,
   "miflora-mqqt-daemon": 1,

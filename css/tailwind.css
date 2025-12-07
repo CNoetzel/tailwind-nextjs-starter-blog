@@ -115,6 +115,21 @@
       color: var(--color-gray-100);
     }
   }
+
+  .info {
+    background-color: var(--color-sky-300, #7dd3fc); /* fallback to Tailwind's sky[300] */
+    color: var(--color-sky-900, #0c4a6e); /* fallback to Tailwind's sky[900] */
+  }
+  .warn {
+    background-color: var(--color-red-800, #991b1b); /* fallback to Tailwind's red[800] */
+    color: var(--color-red-50, #fef2f2); /* fallback to Tailwind's red[50] */
+  }
+  .container-info {
+    border-color: var(--color-sky-300, #7dd3fc);
+  }
+  .container-warn {
+    border-color: var(--color-red-800, #991b1b);
+  }
 }
 
 .task-list-item::before {
